@@ -77,66 +77,59 @@ contract Sprout is Ownable {
   event debugStage(uint s);
   
   
-  struct sprout {
+  struct sprout_dna {
     uint dna1;
     uint dna2;
+  }
+  struct sproutt {
     uint planttime;
-    uint readytime;//ready to replant
     uint[] pollen;
     bool isset;
+  }
+  struct plugging {
     bool seed_plug;
     bool pollen_plug;
-    gene g;
-  }
-  // could be derived from dna1 and dna2
-  struct gene {
-    uint height_gen;
-    uint width_gen;
-    uint color;
-    uint fullgrown_time;
-    uint produce_gen;
-    bool seed_yellow;
-    bool seed_round;
   }
   struct Item {
-        string itemName;
-        uint num;
-        uint[] content;
-        bool isValid;
-    }
-  
+    string itemName;
+    uint num;
+    uint[] content;
+    bool isValid;
+  }
   
   // the mappings
-  mapping (address => sprout[5][5]) sprout_list;
+  mapping (address => sprout_dna[5][5]) sprout_list_dna;
+  mapping (address => sproutt[5][5]) sprout_list_t;
+  mapping (address => plugging[5][5]) sprout_list_plugging;
   mapping (address => uint) balance;//account
   mapping (address => Item[]) _ItemList;
-
+  
   // the modifiers
   modifier SproutExist(uint x_id, uint y_id){
-    require(sprout_list[msg.sender][x_id][y_id].isset, "location does not have sprout");
+    require(sprout_list_t[msg.sender][x_id][y_id].isset, "location does not have sprout");
     _;
   }
   modifier EnoughBuySeed(){
     require(balance[msg.sender]> 300, "not enough money to buy random seed");
     _;
   }
-  modifier SeedExist(uint x_id, uint y_id){
-    uint now_stage = now.sub(getPlantTime(x_id, y_id));
+  modifier SeedExist(uint x_id, uint y_id, uint time){
+    uint now_stage = time.sub(getPlantTime(x_id, y_id));
     uint fullgrown_time = getFullGrownTime(x_id, y_id);
     require(now_stage > fullgrown_time.mul(102).div(100), "too early to have seeds");
-    require(!sprout_list[msg.sender][x_id][y_id].seed_plug, "the seeds are already plugged.");
+    require(!sprout_list_plugging[msg.sender][x_id][y_id].seed_plug, "the seeds are already plugged.");
     _;
   }
-  modifier PollenExist(uint x_id, uint y_id){
-    uint now_stage = now.sub(getPlantTime(x_id, y_id));
+  modifier PollenExist(uint x_id, uint y_id, uint time){
+    uint now_stage = time.sub(getPlantTime(x_id, y_id));
     uint fullgrown_time = getFullGrownTime(x_id, y_id);
     require(now_stage > fullgrown_time, "too early to have pollen");
     require(now_stage < fullgrown_time.mul(102).div(100), "too late to have pollen");
-    require(!sprout_list[msg.sender][x_id][y_id].pollen_plug, "the pollen are already plugged.");
+    require(!sprout_list_plugging[msg.sender][x_id][y_id].pollen_plug, "the pollen are already plugged.");
     _;
   }
-  modifier PollenizeReady(uint x_id, uint y_id){
-    uint now_stage = now.sub(getPlantTime(x_id, y_id));
+  modifier PollenizeReady(uint x_id, uint y_id, uint time){
+    uint now_stage = time.sub(getPlantTime(x_id, y_id));
     uint fullgrown_time = getFullGrownTime(x_id, y_id);
     require(now_stage > fullgrown_time.mul(101).div(100), "too early to have pollen");
     require(now_stage < fullgrown_time.mul(102).div(100), "too late to have pollen");
@@ -162,33 +155,74 @@ contract Sprout is Ownable {
 
 
 //get TRAITS
-  function getFullGrownTime(uint x_id, uint y_id) internal view returns(uint){
-    return sprout_list[msg.sender][x_id][y_id].g.fullgrown_time;
+  function getFullGrownTime(uint x_id, uint y_id) public view returns(uint){
+    uint point = 2**201;
+    uint speed_gen = 0;
+    for (uint i =201; i <256; i++){
+        if (((sprout_list_dna[msg.sender][x_id][y_id].dna1) & point) == point){speed_gen = speed_gen.add(1);}
+        if (((sprout_list_dna[msg.sender][x_id][y_id].dna2) & point) == point){speed_gen = speed_gen.add(1);}
+        point = point >> 1;
+    }
+    return (2 days) - (speed_gen.mul(7 days).div(880));
   }
   function getPlantTime(uint x_id,  uint y_id) internal view returns(uint){
-    return sprout_list[msg.sender][x_id][y_id].planttime;
+    return sprout_list_t[msg.sender][x_id][y_id].planttime;
   }
   function getHeightGene(uint x_id, uint y_id) internal view returns(uint){
-    return sprout_list[msg.sender][x_id][y_id].g.height_gen;
+    uint point = 2**101;
+    uint height_gen = 0;
+    for (uint i =101; i <161; i++){
+        if (((sprout_list_dna[msg.sender][x_id][y_id].dna1) & point) == point){height_gen = height_gen.add(1);}
+        if (((sprout_list_dna[msg.sender][x_id][y_id].dna2) & point) == point){height_gen = height_gen.add(1);}
+        point = point >> 1;
+    }
+    return height_gen;
   }
   function getWidthGene(uint x_id, uint y_id) internal view returns(uint){
-    return sprout_list[msg.sender][x_id][y_id].g.width_gen;
+    uint point = 2**41;
+    uint width_gen = 0;
+    for (uint i =41; i <101; i++){
+        if (((sprout_list_dna[msg.sender][x_id][y_id].dna1) & point) == point){width_gen = width_gen.add(1);}
+        if (((sprout_list_dna[msg.sender][x_id][y_id].dna2) & point) == point){width_gen = width_gen.add(1);}
+        point = point >> 1;
+    }
+    return width_gen;
   }
   // The following traits could be seen from the players
+  function getGrownTime(uint x_id, uint y_id, uint time) public view SproutExist(x_id, y_id) returns(uint){
+    return (time-getPlantTime(x_id, y_id));
+  }
   function getProduceGene(uint x_id, uint y_id) public view SproutExist(x_id, y_id) returns(uint){
-    return sprout_list[msg.sender][x_id][y_id].g.produce_gen;
+    uint point = 2**161;
+    uint produce_gen = 0;
+    for (uint i =161; i <201; i++){
+        if (((sprout_list_dna[msg.sender][x_id][y_id].dna1) & point) == point){produce_gen = produce_gen.add(1);}
+        if (((sprout_list_dna[msg.sender][x_id][y_id].dna2) & point) == point){produce_gen = produce_gen.add(1);}
+        point = point >> 1;
+    }
+    return produce_gen;
+  }
+  function getSeedPlug(uint x_id, uint y_id)  public view SproutExist(x_id, y_id) returns(bool){
+    return sprout_list_plugging[msg.sender][x_id][y_id].seed_plug;
   }
   function getSeedRound(uint x_id, uint y_id) public view SproutExist(x_id, y_id) returns(bool){
-    return sprout_list[msg.sender][x_id][y_id].g.seed_round;
+    return (((sprout_list_dna[msg.sender][x_id][y_id].dna1)&2== 2) || ((sprout_list_dna[msg.sender][x_id][y_id].dna2)&2 == 2));
   }
   function getSeedYellow(uint x_id, uint y_id) public view SproutExist(x_id, y_id) returns(bool){
-    return sprout_list[msg.sender][x_id][y_id].g.seed_yellow;
+    return  (((sprout_list_dna[msg.sender][x_id][y_id].dna1%2) | (sprout_list_dna[msg.sender][x_id][y_id].dna2%2)) > 0);
   }
   function getColor(uint x_id, uint y_id) public view SproutExist(x_id, y_id) returns(uint){
-    return sprout_list[msg.sender][x_id][y_id].g.color;
+    uint point = 2**2;
+    uint color = 0;
+    for (uint i =2; i <41; i++){
+        if (((sprout_list_dna[msg.sender][x_id][y_id].dna1) & point) == point){color = color.add(1);}
+        if (((sprout_list_dna[msg.sender][x_id][y_id].dna2) & point) == point){color = color.add(1);}
+        point = point >> 1;
+    }
+    return color;
   }
-  function getSproutHeight( uint x_id, uint y_id) public view SproutExist(x_id, y_id) returns(uint){
-      uint now_stage = now.sub(getPlantTime(x_id, y_id));
+  function getSproutHeight( uint x_id, uint y_id, uint time) public view SproutExist(x_id, y_id) returns(uint){
+      uint now_stage = time.sub(getPlantTime(x_id, y_id));
       uint fullgrown_time = getFullGrownTime(x_id, y_id);
       uint height_gen =  getHeightGene(x_id, y_id);
       if(now_stage > fullgrown_time) {
@@ -201,8 +235,8 @@ contract Sprout is Ownable {
            return (height_gen.add(60)).mul(now_stage).div(fullgrown_time);}
       }
   }
-  function getSproutWidth( uint x_id, uint y_id) public view SproutExist(x_id, y_id) returns(uint){
-    uint now_stage = now.sub(getPlantTime(x_id, y_id));
+  function getSproutWidth( uint x_id, uint y_id, uint time) public view SproutExist(x_id, y_id) returns(uint){
+    uint now_stage = time.sub(getPlantTime(x_id, y_id));
     uint fullgrown_time = getFullGrownTime(x_id, y_id);
     uint width_gen =getWidthGene(x_id, y_id);
       if(now_stage > fullgrown_time) {
@@ -217,7 +251,7 @@ contract Sprout is Ownable {
         }
   }
   function getSproutPrice( uint now_stage, uint fullgrown_time, uint height, uint width, uint x_id, uint y_id) 
-    internal view SproutExist(x_id, y_id) returns(uint){
+    public view SproutExist(x_id, y_id) returns(uint){
       uint color = getColor(x_id, y_id);
       bool seed_yellow = getSeedYellow(x_id, y_id);
       bool seed_round = getSeedRound(x_id, y_id);
@@ -240,74 +274,54 @@ contract Sprout is Ownable {
 
 
   
-  function addSprout(uint x_id, uint y_id, uint dna1, uint dna2) internal  {
-    require(sprout_list[msg.sender][x_id][y_id].isset == false);
-    gene memory g = gene(0, 0, 0, 0, 0, false, false);
-    uint temp1 = dna1;
-    uint temp2 = dna2;
-    uint speed_gen;
+  /*function addSprout(uint x_id, uint y_id, uint dna1, uint dna2, uint time) internal  {
+    //sprout_list[msg.sender][x_id][y_id] = sprout(dna1, dna2, now, 0, new uint[](0), true, false, false);
+    //sprout_list_dna[msg.sender][x_id][y_id] = sprout_dna(dna1, dna2);
+    sprout_list_t[msg.sender][x_id][y_id] = sproutt(time, new uint[](0), true);
+    //sprout_list_plugging[msg.sender][x_id][y_id] = plugging(false, false);
+    emit OnAdd(x_id, y_id, dna1, dna2);
+  }*/
 
-    //determine genes (mendilen traits)
-    g.seed_yellow = (((temp1%2) | (temp2%2)) > 0);
-    temp1 = temp1 >> 1;temp2 = temp2 >> 1;
-    g.seed_round = (((temp1%2) | (temp2 %2)) > 0);
-    temp1 = temp1 >> 1;temp2 = temp2 >> 1;
-    //determine genes (polygene traits)
-    for (uint i =2; i <41; i++){
-        if (temp1%2 == 1){g.color = g.color.add(1);}
-        if (temp2%2 == 1){g.color = g.color.add(1);}
-        temp1 = temp1 >> 1;temp2 = temp2 >> 1;
-    }
-    for (uint i =41; i <101; i++){
-        if (temp1%2 == 1){g.width_gen = g.width_gen.add(1);}
-        if (temp2%2 == 1){g.width_gen = g.width_gen.add(1);}
-        temp1 = temp1 >> 1;temp2 = temp2 >> 1;
-    }
-    for (uint i =101; i <161; i++){
-        if (temp1%2 == 1){g.height_gen = g.height_gen.add(1);}
-        if (temp2%2 == 1){g.height_gen = g.height_gen.add(1);}
-        temp1 = temp1 >> 1;temp2 = temp2 >> 1;
-    }
-    for (uint i =161; i <201; i++){
-        if (temp1%2 == 1){g.produce_gen = g.produce_gen.add(1);}
-        if (temp2%2 == 1){g.produce_gen = g.produce_gen.add(1);}
-        temp1 = temp1 >> 1;temp2 = temp2 >> 1;
-    }
-    for (uint i =201; i <256; i++){
-        if (temp1%2 == 1){speed_gen = speed_gen.add(1);}
-        if (temp2%2 == 1){speed_gen = speed_gen.add(1);}
-        temp1 = temp1 >> 1;temp2 = temp2 >> 1;
-    }
-    g.fullgrown_time = (2 days) - (speed_gen.mul(7 days).div(880));
+  function addSprout1(uint x_id, uint y_id, uint dna1, uint dna2) public {
+    sprout_list_dna[msg.sender][x_id][y_id] = sprout_dna(dna1, dna2);
+  }
 
-    sprout_list[msg.sender][x_id][y_id] = sprout(dna1, dna2, now, 0, new uint[](0), true, false, false, g);
+  function addSprout2(uint x_id, uint y_id, uint time) public {
+    sprout_list_t[msg.sender][x_id][y_id] = sproutt(time, new uint[](0), true);
+  }
+
+  function addSprout3(uint x_id, uint y_id, uint dna1, uint dna2) public {
+    sprout_list_plugging[msg.sender][x_id][y_id] = plugging(false, false);
+    balance[msg.sender] = balance[msg.sender].sub(300);
     emit OnAdd(x_id, y_id, dna1, dna2);
   }
-  
+
+  function addSprout4plantSeed(uint x_id, uint y_id, uint dna1, uint dna2) public {
+    sprout_list_plugging[msg.sender][x_id][y_id] = plugging(false, false);
+    emit OnAdd(x_id, y_id, dna1, dna2);
+  }
   // plant a sprout with random dna  cost $300
-  function randomAddSprout(uint x_id, uint y_id) public EnoughBuySeed(){
+  /*function randomAddSprout(uint x_id, uint y_id) public EnoughBuySeed(){
     /*uint dna1 = uint(keccak256(abi.encodePacked(block.timestamp, block.difficulty)));
     uint dna2 = uint(keccak256(abi.encodePacked(block.difficulty, block.timestamp)));
-    addSprout(x_id, y_id, dna1, dna2);*/
+    addSprout(x_id, y_id, dna1, dna2);
     addSprout(x_id, y_id, 2**256-2**40, 2**256-2**40);//for testing
     balance[msg.sender] = balance[msg.sender].sub(300);
-  }
+  }*/
     
-  function plugSprout(uint x_id, uint y_id) public SproutExist(x_id, y_id){
-      uint now_stage = now.sub(getPlantTime(x_id, y_id));
-      uint fullgrown_time = getFullGrownTime(x_id, y_id);
-      uint width = getSproutWidth(x_id, y_id);
-      uint height = getSproutHeight( x_id, y_id);
-      uint price = getSproutPrice(now_stage, fullgrown_time, height, width, x_id, y_id);
-      if(sprout_list[msg.sender][x_id][y_id].isset == true){
-        sprout_list[msg.sender][x_id][y_id].isset = false;
+  function plugSprout(uint x_id, uint y_id, uint price) public SproutExist(x_id, y_id){
+      if(sprout_list_t[msg.sender][x_id][y_id].isset == true){
+        sprout_list_t[msg.sender][x_id][y_id].isset = false;
         balance[msg.sender] = balance[msg.sender].add(price);
       }
       emit OnPlug(x_id, y_id);
-    }
+  }
 
   function balanceOf(address account) public view returns (uint256) {
         return balance[account];
+  }
+  function transfer(address account, uint amount) public{
+        balance[account] = balance[account]+amount;
   }
 
   // when a player enter the game, he or she should be registered by the contract owner (us) first
@@ -316,40 +330,40 @@ contract Sprout is Ownable {
         emit OnRegister(new_player);
     }
     //when you plug the pollen from a beanstalk, it's immediately add to your item list
-    function PlugPollen(uint x_id, uint y_id) public SproutExist(x_id, y_id) PollenExist(x_id, y_id){
-        sprout_list[msg.sender][x_id][y_id].pollen_plug = true;
+    /*function PlugPollen(uint x_id, uint y_id) public SproutExist(x_id, y_id) PollenExist(x_id, y_id){
+        sprout_list_plugging[msg.sender][x_id][y_id].pollen_plug = true;
         addItem("pollen", 10, new uint[](0));
         uint _Id = _ItemList[msg.sender].length -1;
-        _ItemList[msg.sender][_Id].content.push(sprout_list[msg.sender][x_id][y_id].dna1);
-        _ItemList[msg.sender][_Id].content.push(sprout_list[msg.sender][x_id][y_id].dna2);
+        _ItemList[msg.sender][_Id].content.push(sprout_list_dna[msg.sender][x_id][y_id].dna1);
+        _ItemList[msg.sender][_Id].content.push(sprout_list_dna[msg.sender][x_id][y_id].dna2);
     }
     // The seed Items could be used to plant a new sprout at (x_id, y_id)
     function UsePollenItem(uint x_id, uint y_id, uint _Id) public 
     isValidItem(_Id) isPollenItem( _Id) SproutExist(x_id, y_id) PollenizeReady(x_id, y_id){
-        if(!sprout_list[msg.sender][x_id][y_id].pollen_plug){
-            sprout_list[msg.sender][x_id][y_id].pollen.push(sprout_list[msg.sender][x_id][y_id].dna1);
-            sprout_list[msg.sender][x_id][y_id].pollen.push(sprout_list[msg.sender][x_id][y_id].dna2);
+        if(!sprout_list_plugging[msg.sender][x_id][y_id].pollen_plug){
+            sprout_list_t[msg.sender][x_id][y_id].pollen.push(sprout_list_dna[msg.sender][x_id][y_id].dna1);
+            sprout_list_t[msg.sender][x_id][y_id].pollen.push(sprout_list_dna[msg.sender][x_id][y_id].dna2);
         }
-        sprout_list[msg.sender][x_id][y_id].pollen.push(_ItemList[msg.sender][_Id].content[0]);
-        sprout_list[msg.sender][x_id][y_id].pollen.push(_ItemList[msg.sender][_Id].content[1]);
+        sprout_list_t[msg.sender][x_id][y_id].pollen.push(_ItemList[msg.sender][_Id].content[0]);
+        sprout_list_t[msg.sender][x_id][y_id].pollen.push(_ItemList[msg.sender][_Id].content[1]);
     }
 
 
     //when you plug the seeds from a beanstalk, it's immediately add to your item list
     function PlugSeed(uint x_id, uint y_id) public SproutExist(x_id, y_id) SeedExist(x_id, y_id){
-        sprout_list[msg.sender][x_id][y_id].seed_plug = true;
+        sprout_list_plugging[msg.sender][x_id][y_id].seed_plug = true;
         uint num = getProduceGene(x_id, y_id).div(2).add(10);
         addItem("seed", num, new uint[](0));
         uint _Id = _ItemList[msg.sender].length -1;
-        _ItemList[msg.sender][_Id].content.push(sprout_list[msg.sender][x_id][y_id].dna1);
-        _ItemList[msg.sender][_Id].content.push(sprout_list[msg.sender][x_id][y_id].dna2);
-        if(!sprout_list[msg.sender][x_id][y_id].pollen_plug){
-            _ItemList[msg.sender][_Id].content.push(sprout_list[msg.sender][x_id][y_id].dna1);
-            _ItemList[msg.sender][_Id].content.push(sprout_list[msg.sender][x_id][y_id].dna2);
+        _ItemList[msg.sender][_Id].content.push(sprout_list_dna[msg.sender][x_id][y_id].dna1);
+        _ItemList[msg.sender][_Id].content.push(sprout_list_dna[msg.sender][x_id][y_id].dna2);
+        if(!sprout_list_plugging[msg.sender][x_id][y_id].pollen_plug){
+            _ItemList[msg.sender][_Id].content.push(sprout_list_dna[msg.sender][x_id][y_id].dna1);
+            _ItemList[msg.sender][_Id].content.push(sprout_list_dna[msg.sender][x_id][y_id].dna2);
         }
-        uint len = sprout_list[msg.sender][x_id][y_id].pollen.length;
+        uint len = sprout_list_t[msg.sender][x_id][y_id].pollen.length;
         for (uint i=0; i < len ; i++){
-            _ItemList[msg.sender][_Id].content.push(sprout_list[msg.sender][x_id][y_id].pollen[i]);
+            _ItemList[msg.sender][_Id].content.push(sprout_list_t[msg.sender][x_id][y_id].pollen[i]);
         }
     }
     // The seed Items could be used to plant a new sprout at (x_id, y_id)
@@ -364,7 +378,7 @@ contract Sprout is Ownable {
         dna2 = dna2.add(~rand_f & (_ItemList[msg.sender][_Id].content[num_f.mul(2).add(3)]));
         addSprout(x_id, y_id, dna1, dna2);
         spendItem(_Id, 1);
-    }
+    }*/
     //Basic functions for showing list
     function isItemValid(uint _Id) public view returns(bool isValid) {
         return _ItemList[msg.sender][_Id].isValid;
@@ -427,3 +441,4 @@ contract Sprout is Ownable {
         return(validItems, count);
     }
 }
+
