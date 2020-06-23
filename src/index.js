@@ -506,6 +506,7 @@ class App extends React.Component {
         sprouttmp[sproutid].seed_dna1 = dna1;
         sprouttmp[sproutid].seed_dna2 = dna2;
         sprouttmp[sproutid].pollination = 1;
+        sprouttmp[sproutid].hasseed = 1;
         this.setState({sprouts: sprouttmp});
       }
     }
@@ -525,8 +526,7 @@ class App extends React.Component {
           <div class="four wide column segment">
               <User username={this.state.username} userbalance={this.state.userbalance} />
               <MyItem seeditems={this.state.seeditems} pollenitems={this.state.pollenitems} />
-              <button onClick={this.handleClick} class="ts button">test sprout</button>
-              <button onClick={this.testContract} class="ts button">test contract</button>
+              
           </div>
           <SproutFarm addSprout={this.addSprout} plugSprout={this.plugSprout} GetSeed={this.GetSeed} PlantSeed={this.PlantSeed} GetPollen={this.GetPollen} Pollination={this.Pollination} sprouts={this.state.sprouts} seeditem_data={this.state.seeditem_data} />
         </div>

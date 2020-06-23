@@ -43,7 +43,7 @@ class Sprout extends Component {
             icon='./img/plantit.png';
         } else{
             var grown = Date.now()-this.state.sprout.addsprouttime;
-            if(grown>this.state.sprout.fullgrowntime && grown<this.state.sprout.fullgrowntime*1.05){
+            if(grown>this.state.sprout.fullgrowntime*1 && grown<this.state.sprout.fullgrowntime*1.05){
                 icon = './img/old.png';
             } else if(grown>=this.state.sprout.fullgrowntime*1.05){
                 icon = './img/dead.png';
@@ -51,7 +51,7 @@ class Sprout extends Component {
                 icon = './img/pollination.png';
             }
             //icon='./img/seed.png';
-            else if(this.state.sprout.height<=24){//stage0
+            else if(this.state.sprout.height<=10){//stage0
                 var namearr = ['./img/stage0/'];
                 if(this.state.sprout.seed_yg==0){//yellow seed
                     namearr.push('0_');
@@ -65,7 +65,7 @@ class Sprout extends Component {
                 }
                 icon = namearr.join("")
             }
-            else if(this.state.sprout.height>24 && this.state.sprout.height<=48){//stage1
+            else if(this.state.sprout.height>10 && this.state.sprout.height<=20){//stage1
                 var namearr = ['./img/stage1/'];
                 if(this.state.sprout.seed_yg==0){//yellow seed
                     namearr.push('0_');
@@ -79,7 +79,7 @@ class Sprout extends Component {
                 }
                 icon = namearr.join("");
             }
-            else if(this.state.sprout.height>48 && this.state.sprout.height<=72){//stage2
+            else if(this.state.sprout.height>20 && this.state.sprout.height<=30){//stage2
                 var namearr = ['./img/stage2/', this.state.sprout.color];
                 if(this.state.sprout.seed_yg==0){
                     namearr.push('_y');
@@ -100,7 +100,7 @@ class Sprout extends Component {
                 }
                 icon = namearr.join("");
             }
-            else if(this.state.sprout.height>72 && this.state.sprout.height<=96){
+            else if(this.state.sprout.height>30 && this.state.sprout.height<=40){
                 var namearr = ['./img/stage3/', this.state.sprout.color];
                 if(this.state.sprout.seed_yg==0){
                     namearr.push('_y');
@@ -121,7 +121,7 @@ class Sprout extends Component {
                 }
                 icon = namearr.join("");
             }
-            else if(this.state.sprout.height>96 && this.state.sprout.height<120){
+            else if(this.state.sprout.height>40){
                 var namearr = ['./img/stage4/', this.state.sprout.color];
                 if(this.state.sprout.width<=5){
                     namearr.push('_w1.png');

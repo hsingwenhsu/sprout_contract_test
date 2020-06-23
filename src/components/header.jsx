@@ -11,11 +11,7 @@ class Header extends Component {
                     <div class="ts center aligned twelve column grid">
                         <div id="sproutheader">Sprout Farm</div>
                     </div>
-                    <div class="ts active snackbar top right">
-                        <p class="info action">
-                            {this.props.current_time}
-                        </p>
-                    </div>
+                    
                 </div>
             </div>
         )
